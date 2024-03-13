@@ -1,2 +1,2 @@
 # procedural-generation
-Implementing several procedural generation algorithms for 
+Implementing several procedural generation algorithms in python
