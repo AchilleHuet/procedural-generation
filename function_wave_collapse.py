@@ -78,20 +78,24 @@ def find_and_update_most_constrained_tile(tiles, scores):
     if minimum == 5:
         return None, None
     
+    # chosse a random tile from the tiles with the least possibilities
     target_tiles = list(zip(*np.where(scores==minimum)))
+    j, i = choice(target_tiles)
 
-    for j, i in target_tiles:
-        tile = tiles[j][i]
-        new_type = choice(list(tile.choices))
-        tile.type = new_type
-        tile.color = type_to_color[new_type]
+    # update the tile
+    tile = tiles[j][i]
+    new_type = choice(list(tile.choices))
+    tile.type = new_type
+    tile.color = type_to_color[new_type]
+    tile.choices = set()
+    tile.draw()
 
-        tiles, scores = update_neighbors(tiles, scores, new_type, i, j)
+    scores[j][i] = tile.score
 
-        tile.choices = set()
-        scores[j][i] = tile.score
-        tile.draw()
-        return tiles, scores
+    # update nearby tile constraints and scores
+    tiles, scores = update_neighbors(tiles, scores, new_type, i, j)
+
+    return tiles, scores
 
 
 if __name__ == "__main__":
