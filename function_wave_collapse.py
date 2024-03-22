@@ -1,6 +1,7 @@
 import pygame
 from random import choice
 from typing import Set, Optional, Tuple
+import numpy as np
 
 DARK_GREEN = (0, 150, 0)
 GREEN = (0, 255, 0)
@@ -45,7 +46,7 @@ class Tile:
     
     @property
     def score(self):
-        return len(self.choices) if len(self.choices) > 0 else None
+        return 5 if self.type is not None else len(self.choices)
     
     def draw(self):
         rect = pygame.Rect(self.x, self.y, TILE_SIZE[0], TILE_SIZE[1])
@@ -53,8 +54,10 @@ class Tile:
 
 
 tiles = [[Tile(i, j) for i in range(MAP_SIZE[0])] for j in range(MAP_SIZE[1])]
+scores = [[tile.score for tile in row] for row in tiles] 
 
-def update_neighbors(tiles, tile_type, i, j):
+
+def update_neighbors(tiles, scores, tile_type, i, j):
     tiles_to_update = []
     if i > 0:
         tiles_to_update.append((i-1,j))
@@ -67,13 +70,11 @@ def update_neighbors(tiles, tile_type, i, j):
     for (i1, j1) in tiles_to_update:
             tile = tiles[j1][i1]
             tile.choices = tile.choices.intersection(allowed_neighbors[tile_type])
-    return tiles
+            scores[j1][i1] = tile.score
+    return tiles, scores
 
-def find_and_update_most_constrained_tile(tiles):
-    scores = [tile.score for row in tiles for tile in row if tile.score is not None]
-    if scores == []:
-        return None
-    minimum = min(scores)
+def find_and_update_most_constrained_tile(tiles, scores):
+    minimum = np.min(scores)
 
     for j, row in enumerate(tiles):
         for i, tile in enumerate(row):
@@ -82,12 +83,14 @@ def find_and_update_most_constrained_tile(tiles):
                 tile.type = new_type
                 tile.color = type_to_color[new_type]
 
-                tiles = update_neighbors(tiles, new_type, i, j)
+                tiles, scores = update_neighbors(tiles, scores, new_type, i, j)
 
                 tile.choices = set()
+                scores[j][i] = tile.score
                 tile.draw()
-                return tiles
-            
+                return tiles, scores
+    return None, None
+
 
 if __name__ == "__main__":
     
@@ -107,7 +110,7 @@ if __name__ == "__main__":
                 RUN = False
 
         if tiles is not None:
-            tiles = find_and_update_most_constrained_tile(tiles)
+            tiles, scores = find_and_update_most_constrained_tile(tiles, scores)
 
         pygame.display.flip()
 
