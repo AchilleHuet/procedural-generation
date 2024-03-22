@@ -2,6 +2,7 @@ import pygame
 from random import choice
 from typing import Set, Optional, Tuple
 import numpy as np
+from time import time
 
 DARK_GREEN = (0, 150, 0)
 GREEN = (0, 255, 0)
@@ -43,14 +44,20 @@ class Tile:
         self.choices: Set[str] =  {"forest", "meadow", "beach", "sea"}
         self.type: Optional[str] = None
         self.color: Tuple[int] = (0, 0, 0)
+        self.rect = pygame.Rect(self.x, self.y, TILE_SIZE[0], TILE_SIZE[1])
     
     @property
     def score(self):
         return 5 if self.type is not None else len(self.choices)
     
+    def choose_type(self):
+        self.type = choice(list(self.choices))
+        self.color = type_to_color[self.type]
+        self.choices = set()
+        return self.type
+    
     def draw(self):
-        rect = pygame.Rect(self.x, self.y, TILE_SIZE[0], TILE_SIZE[1])
-        pygame.draw.rect(screen, self.color, rect)
+        pygame.draw.rect(screen, self.color, self.rect)
 
 
 tiles = [[Tile(i, j) for i in range(MAP_SIZE[0])] for j in range(MAP_SIZE[1])]
@@ -84,10 +91,7 @@ def find_and_update_most_constrained_tile(tiles, scores):
 
     # update the tile
     tile = tiles[j][i]
-    new_type = choice(list(tile.choices))
-    tile.type = new_type
-    tile.color = type_to_color[new_type]
-    tile.choices = set()
+    new_type = tile.choose_type()
     tile.draw()
 
     scores[j][i] = tile.score
@@ -110,15 +114,27 @@ if __name__ == "__main__":
     clock = pygame.time.Clock()
     RUN = True
 
+    simulation_time = 0
+    display_time = 0
+
     while RUN:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 RUN = False
 
         if tiles is not None:
+            t1 = time()
             tiles, scores = find_and_update_most_constrained_tile(tiles, scores)
+            t2 = time()
 
-        pygame.display.flip()
+            pygame.display.flip()
+            t3 = time()
+
+            simulation_time += t2 - t1
+            display_time += t3 - t2
+
+    print(simulation_time)
+    print(display_time)
 
     # Exit main loop
     pygame.quit()
