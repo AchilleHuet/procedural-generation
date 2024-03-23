@@ -74,7 +74,7 @@ class Tile:
 
 
 tiles = [[Tile(i, j) for i in range(MAP_SIZE[0])] for j in range(MAP_SIZE[1])]
-scores = [[tile.score for tile in row] for row in tiles] 
+scores = np.array([[tile.score for tile in row] for row in tiles])
 
 @timer
 def update_neighbors(tiles, scores, tile_type, i, j):
