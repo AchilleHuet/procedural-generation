@@ -1,6 +1,6 @@
 import pygame
-from random import choice
-from typing import Set, Optional, Tuple
+from random import choices
+from typing import Optional, Tuple
 import numpy as np
 from time import time
 
@@ -14,12 +14,12 @@ TILE_SIZE = (5, 5)
 MAP_SIZE = (SCREEN_SIZE[0]//TILE_SIZE[0], SCREEN_SIZE[1]//TILE_SIZE[1])
 
 
-types = {
+types = [
     "forest",
     "meadow",
     "beach",
     "sea",
-}
+]
 
 type_to_color = {
     "forest": DARK_GREEN,
@@ -33,6 +33,13 @@ allowed_neighbors = {
     "meadow": {"forest", "meadow", "beach"},
     "beach": {"meadow", "beach", "sea"},
     "sea": {"beach", "sea"},
+}
+
+type_weights = {
+    "forest": 1,
+    "meadow": 2,
+    "beach": 1,
+    "sea": 1,
 }
 
 MAX_SCORE = len(types)+1
@@ -55,7 +62,7 @@ class Tile:
     def __init__(self, i, j):
         self.x: int = TILE_SIZE[0]*i
         self.y: int = TILE_SIZE[1]*j
-        self.choices: Set[str] =  types
+        self.choices: list[str] =  types
         self.type: Optional[str] = None
         self.color: Tuple[int] = (0, 0, 0)
         self.rect = pygame.Rect(self.x, self.y, TILE_SIZE[0], TILE_SIZE[1])
@@ -65,7 +72,7 @@ class Tile:
         return MAX_SCORE if self.type is not None else len(self.choices)
     
     def choose_type(self):
-        self.type = choice(list(self.choices))
+        [self.type] = choices(self.choices, weights=[type_weights[c] for c in self.choices])
         self.color = type_to_color[self.type]
         self.choices = set()
         return self.type
@@ -90,14 +97,14 @@ def update_neighbors(tiles, scores, tile_type, i, j):
         tiles_to_update.append((i,j+1))
     for (i1, j1) in tiles_to_update:
             tile = tiles[j1][i1]
-            tile.choices = tile.choices.intersection(allowed_neighbors[tile_type])
+            tile.choices = [x for x in tile.choices if x in allowed_neighbors[tile_type]]
             scores[j1][i1] = tile.score
     return tiles, scores
 
 @timer
 def choose_tile(scores, minimum):
     target_tiles = list(zip(*np.where(scores==minimum)))
-    j, i = choice(target_tiles)
+    [(j, i)] = choices(target_tiles)
     return i, j
 
 @timer
