@@ -103,7 +103,7 @@ def choose_tile(scores, minimum):
 def find_and_update_most_constrained_tile(tiles, scores):
     minimum = np.min(scores)
     if minimum == 5:
-        return None, None
+        return None, None, None
     
     # chosse a random tile from the tiles with the least possibilities    
     i, j = choose_tile(scores, minimum)
@@ -118,11 +118,12 @@ def find_and_update_most_constrained_tile(tiles, scores):
     # update nearby tile constraints and scores
     tiles, scores = update_neighbors(tiles, scores, new_type, i, j)
 
-    return tiles, scores
+    return tiles, scores, tile
 
 @timer
-def update_screen():
-    pygame.display.flip()
+def update_screen(tile):
+    if tile is not None:
+        pygame.display.update(tile.rect)
 
 
 if __name__ == "__main__":
@@ -143,8 +144,8 @@ if __name__ == "__main__":
                 RUN = False
 
         if tiles is not None:
-            tiles, scores = find_and_update_most_constrained_tile(tiles, scores)
-            update_screen()
+            tiles, scores, updated_tile = find_and_update_most_constrained_tile(tiles, scores)
+            update_screen(updated_tile)
 
     print(TIMER)
 
