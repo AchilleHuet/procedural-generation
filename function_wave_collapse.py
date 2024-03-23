@@ -14,12 +14,12 @@ TILE_SIZE = (5, 5)
 MAP_SIZE = (SCREEN_SIZE[0]//TILE_SIZE[0], SCREEN_SIZE[1]//TILE_SIZE[1])
 
 
-types = [
+types = {
     "forest",
     "meadow",
     "beach",
-    "water",
-]
+    "sea",
+}
 
 type_to_color = {
     "forest": DARK_GREEN,
@@ -35,6 +35,7 @@ allowed_neighbors = {
     "sea": {"beach", "sea"},
 }
 
+MAX_SCORE = len(types)+1
 TIMER = {}
 
 def timer(func):
@@ -54,14 +55,14 @@ class Tile:
     def __init__(self, i, j):
         self.x: int = TILE_SIZE[0]*i
         self.y: int = TILE_SIZE[1]*j
-        self.choices: Set[str] =  {"forest", "meadow", "beach", "sea"}
+        self.choices: Set[str] =  types
         self.type: Optional[str] = None
         self.color: Tuple[int] = (0, 0, 0)
         self.rect = pygame.Rect(self.x, self.y, TILE_SIZE[0], TILE_SIZE[1])
     
     @property
     def score(self):
-        return 5 if self.type is not None else len(self.choices)
+        return MAX_SCORE if self.type is not None else len(self.choices)
     
     def choose_type(self):
         self.type = choice(list(self.choices))
@@ -102,7 +103,7 @@ def choose_tile(scores, minimum):
 @timer
 def find_and_update_most_constrained_tile(tiles, scores):
     minimum = np.min(scores)
-    if minimum == 5:
+    if minimum == MAX_SCORE:
         return None, None, None
     
     # chosse a random tile from the tiles with the least possibilities    
