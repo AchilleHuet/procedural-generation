@@ -120,6 +120,10 @@ def find_and_update_most_constrained_tile(tiles, scores):
 
     return tiles, scores
 
+@timer
+def update_screen():
+    pygame.display.flip()
+
 
 if __name__ == "__main__":
     
@@ -133,27 +137,14 @@ if __name__ == "__main__":
     clock = pygame.time.Clock()
     RUN = True
 
-    simulation_time = 0
-    display_time = 0
-
     while RUN:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 RUN = False
 
         if tiles is not None:
-            t1 = time()
             tiles, scores = find_and_update_most_constrained_tile(tiles, scores)
-            t2 = time()
-
-            pygame.display.flip()
-            t3 = time()
-
-            simulation_time += t2 - t1
-            display_time += t3 - t2
-
-    print(simulation_time)
-    print(display_time)
+            update_screen()
 
     print(TIMER)
 
