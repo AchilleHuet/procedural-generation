@@ -80,14 +80,18 @@ def update_neighbors(tiles, scores, tile_type, i, j):
             scores[j1][i1] = tile.score
     return tiles, scores
 
+def choose_tile(scores, minimum):
+    target_tiles = list(zip(*np.where(scores==minimum)))
+    j, i = choice(target_tiles)
+    return i, j
+
 def find_and_update_most_constrained_tile(tiles, scores):
     minimum = np.min(scores)
     if minimum == 5:
         return None, None
     
-    # chosse a random tile from the tiles with the least possibilities
-    target_tiles = list(zip(*np.where(scores==minimum)))
-    j, i = choice(target_tiles)
+    # chosse a random tile from the tiles with the least possibilities    
+    i, j = choose_tile(scores, minimum)
 
     # update the tile
     tile = tiles[j][i]
