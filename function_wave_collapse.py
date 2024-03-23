@@ -35,6 +35,19 @@ allowed_neighbors = {
     "sea": {"beach", "sea"},
 }
 
+TIMER = {}
+
+def timer(func):
+    def wrapper(*args, **kwargs):
+        func_name = func.__name__
+        total_time = TIMER.get(func_name, 0)
+        t1 = time()
+        value = func(*args, **kwargs)
+        t2 = time()
+        TIMER[func_name] = total_time + t2 - t1
+        return value
+    return wrapper
+
 
 class Tile:
 
@@ -63,7 +76,7 @@ class Tile:
 tiles = [[Tile(i, j) for i in range(MAP_SIZE[0])] for j in range(MAP_SIZE[1])]
 scores = [[tile.score for tile in row] for row in tiles] 
 
-
+@timer
 def update_neighbors(tiles, scores, tile_type, i, j):
     tiles_to_update = []
     if i > 0:
@@ -80,11 +93,13 @@ def update_neighbors(tiles, scores, tile_type, i, j):
             scores[j1][i1] = tile.score
     return tiles, scores
 
+@timer
 def choose_tile(scores, minimum):
     target_tiles = list(zip(*np.where(scores==minimum)))
     j, i = choice(target_tiles)
     return i, j
 
+@timer
 def find_and_update_most_constrained_tile(tiles, scores):
     minimum = np.min(scores)
     if minimum == 5:
@@ -139,6 +154,8 @@ if __name__ == "__main__":
 
     print(simulation_time)
     print(display_time)
+
+    print(TIMER)
 
     # Exit main loop
     pygame.quit()
