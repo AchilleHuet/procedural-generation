@@ -89,17 +89,22 @@ class Tile:
 tiles = [[Tile(i, j) for i in range(MAP_SIZE[0])] for j in range(MAP_SIZE[1])]
 scores = np.array([[tile.score for tile in row] for row in tiles])
 
-def check_neighbors(tiles, tile_type, i, j):
-    tiles_to_check = []
+@timer
+def get_neighbors(i, j):
+    neighbors = []
     if i > 0:
-        tiles_to_check.append((i-1,j))
+        neighbors.append((i-1,j))
     if j > 0:
-        tiles_to_check.append((i,j-1))
+        neighbors.append((i,j-1))
     if i < MAP_SIZE[0]-1:
-        tiles_to_check.append((i+1,j))
+        neighbors.append((i+1,j))
     if j < MAP_SIZE[1]-1: 
-        tiles_to_check.append((i,j+1))
-    for (i1, j1) in tiles_to_check:
+        neighbors.append((i,j+1))
+    return neighbors
+
+@timer
+def check_neighbors(tiles, tile_type, neighbors):
+    for (i1, j1) in neighbors:
         tile = tiles[j1][i1]
         new_choices = [x for x in tile.choices if x in allowed_neighbors[tile_type]]
         if tile.type is None and len(new_choices) == 0:
@@ -107,17 +112,8 @@ def check_neighbors(tiles, tile_type, i, j):
     return True
 
 @timer
-def update_neighbors(tiles, scores, tile_type, i, j):
-    tiles_to_update = []
-    if i > 0:
-        tiles_to_update.append((i-1,j))
-    if j > 0:
-        tiles_to_update.append((i,j-1))
-    if i < MAP_SIZE[0]-1:
-        tiles_to_update.append((i+1,j))
-    if j < MAP_SIZE[1]-1: 
-        tiles_to_update.append((i,j+1))
-    for (i1, j1) in tiles_to_update:
+def update_neighbors(tiles, scores, tile_type, neighbors):
+    for (i1, j1) in neighbors:
             tile = tiles[j1][i1]
             tile.choices = [x for x in tile.choices if x in allowed_neighbors[tile_type]]
             scores[j1][i1] = tile.score
@@ -140,10 +136,11 @@ def find_and_update_most_constrained_tile(tiles, scores):
 
     # update the tile
     tile = tiles[j][i]
+    neighbors = get_neighbors(i,j)
     valid = False
     while not valid:
         new_type = tile.choose_type()
-        valid = check_neighbors(tiles, new_type, i, j)
+        valid = check_neighbors(tiles, new_type, neighbors)
         if not valid:
             tile.choices.remove(new_type)
 
@@ -151,7 +148,7 @@ def find_and_update_most_constrained_tile(tiles, scores):
     scores[j][i] = tile.score
 
     # update nearby tile constraints and scores
-    tiles, scores = update_neighbors(tiles, scores, new_type, i, j)
+    tiles, scores = update_neighbors(tiles, scores, new_type, neighbors)
 
     return tiles, scores, tile
 
