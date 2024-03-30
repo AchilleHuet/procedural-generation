@@ -8,6 +8,7 @@ DARK_GREEN = (0, 150, 0)
 GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
 YELLOW = (255, 255, 200)
+GRAY = (100, 100, 100)
 
 SCREEN_SIZE = (1000, 500)
 TILE_SIZE = (5, 5)
@@ -19,6 +20,7 @@ types = [
     "meadow",
     "beach",
     "sea",
+    "mountains",
 ]
 
 type_to_color = {
@@ -26,20 +28,23 @@ type_to_color = {
     "meadow": GREEN,
     "beach": YELLOW,
     "sea": BLUE,
+    "mountains": GRAY,
 }
 
 allowed_neighbors = {
-    "forest": {"forest", "meadow"},
+    "mountains": {"mountains", "forest"},
+    "forest": {"mountains", "forest", "meadow"},
     "meadow": {"forest", "meadow", "beach"},
     "beach": {"meadow", "beach", "sea"},
     "sea": {"beach", "sea"},
 }
 
 type_weights = {
-    "forest": 1,
+    "mountains": 1,
+    "forest": 1.5,
     "meadow": 2,
     "beach": 1,
-    "sea": 1,
+    "sea": 0.75,
 }
 
 MAX_SCORE = len(types)+1
@@ -74,7 +79,7 @@ class Tile:
     def choose_type(self):
         [self.type] = choices(self.choices, weights=[type_weights[c] for c in self.choices])
         self.color = type_to_color[self.type]
-        self.choices = set()
+        # self.choices.remove(self.type)
         return self.type
     
     def draw(self):
@@ -83,6 +88,23 @@ class Tile:
 
 tiles = [[Tile(i, j) for i in range(MAP_SIZE[0])] for j in range(MAP_SIZE[1])]
 scores = np.array([[tile.score for tile in row] for row in tiles])
+
+def check_neighbors(tiles, tile_type, i, j):
+    tiles_to_check = []
+    if i > 0:
+        tiles_to_check.append((i-1,j))
+    if j > 0:
+        tiles_to_check.append((i,j-1))
+    if i < MAP_SIZE[0]-1:
+        tiles_to_check.append((i+1,j))
+    if j < MAP_SIZE[1]-1: 
+        tiles_to_check.append((i,j+1))
+    for (i1, j1) in tiles_to_check:
+        tile = tiles[j1][i1]
+        new_choices = [x for x in tile.choices if x in allowed_neighbors[tile_type]]
+        if tile.type is None and len(new_choices) == 0:
+            return False
+    return True
 
 @timer
 def update_neighbors(tiles, scores, tile_type, i, j):
@@ -118,9 +140,14 @@ def find_and_update_most_constrained_tile(tiles, scores):
 
     # update the tile
     tile = tiles[j][i]
-    new_type = tile.choose_type()
-    tile.draw()
+    valid = False
+    while not valid:
+        new_type = tile.choose_type()
+        valid = check_neighbors(tiles, new_type, i, j)
+        if not valid:
+            tile.choices.remove(new_type)
 
+    tile.draw()
     scores[j][i] = tile.score
 
     # update nearby tile constraints and scores
