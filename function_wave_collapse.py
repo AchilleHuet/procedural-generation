@@ -15,39 +15,6 @@ TILE_SIZE = (5, 5)
 MAP_SIZE = (SCREEN_SIZE[0]//TILE_SIZE[0], SCREEN_SIZE[1]//TILE_SIZE[1])
 
 
-types = [
-    "forest",
-    "meadow",
-    "beach",
-    "sea",
-    "mountains",
-]
-
-type_to_color = {
-    "forest": DARK_GREEN,
-    "meadow": GREEN,
-    "beach": YELLOW,
-    "sea": BLUE,
-    "mountains": GRAY,
-}
-
-allowed_neighbors = {
-    "mountains": {"mountains", "forest"},
-    "forest": {"mountains", "forest", "meadow"},
-    "meadow": {"forest", "meadow", "beach"},
-    "beach": {"meadow", "beach", "sea"},
-    "sea": {"beach", "sea"},
-}
-
-type_weights = {
-    "mountains": 1,
-    "forest": 1.5,
-    "meadow": 2,
-    "beach": 1,
-    "sea": 0.75,
-}
-
-MAX_SCORE = len(types)+1
 TIMER = {}
 
 def timer(func):
@@ -63,22 +30,60 @@ def timer(func):
 
 
 class Tile:
+    """
+    Represents a square of terrain, with a specific type and corresponding color.
+    Proximity constraints are applied, forbidding certain types of tiles to be next to one another.
+    """
+
+    types = [
+        "forest",
+        "meadow",
+        "beach",
+        "sea",
+        "mountains",
+    ]
+
+    type_to_color = {
+        "forest": DARK_GREEN,
+        "meadow": GREEN,
+        "beach": YELLOW,
+        "sea": BLUE,
+        "mountains": GRAY,
+    }
+
+    allowed_neighbors = {
+        "mountains": {"mountains", "forest"},
+        "forest": {"mountains", "forest", "meadow"},
+        "meadow": {"forest", "meadow", "beach"},
+        "beach": {"meadow", "beach", "sea"},
+        "sea": {"beach", "sea"},
+    }
+
+    type_weights = {
+        "mountains": 1,
+        "forest": 1.5,
+        "meadow": 2,
+        "beach": 1,
+        "sea": 0.75,
+    }
+
+    max_score = len(types)+1
 
     def __init__(self, i, j):
         self.x: int = TILE_SIZE[0]*i
         self.y: int = TILE_SIZE[1]*j
-        self.choices: list[str] =  types
+        self.choices: list[str] =  Tile.types
         self.type: Optional[str] = None
         self.color: Tuple[int] = (0, 0, 0)
         self.rect = pygame.Rect(self.x, self.y, TILE_SIZE[0], TILE_SIZE[1])
     
     @property
     def score(self):
-        return MAX_SCORE if self.type is not None else len(self.choices)
+        return Tile.max_score if self.type is not None else len(self.choices)
     
     def choose_type(self):
-        [self.type] = choices(self.choices, weights=[type_weights[c] for c in self.choices])
-        self.color = type_to_color[self.type]
+        [self.type] = choices(self.choices, weights=[Tile.type_weights[c] for c in self.choices])
+        self.color = Tile.type_to_color[self.type]
         # self.choices.remove(self.type)
         return self.type
     
@@ -106,7 +111,7 @@ def get_neighbors(i, j):
 def check_neighbors(tiles, tile_type, neighbors):
     for (i1, j1) in neighbors:
         tile = tiles[j1][i1]
-        new_choices = [x for x in tile.choices if x in allowed_neighbors[tile_type]]
+        new_choices = [x for x in tile.choices if x in Tile.allowed_neighbors[tile_type]]
         if tile.type is None and len(new_choices) == 0:
             return False
     return True
@@ -115,7 +120,7 @@ def check_neighbors(tiles, tile_type, neighbors):
 def update_neighbors(tiles, scores, tile_type, neighbors):
     for (i1, j1) in neighbors:
             tile = tiles[j1][i1]
-            tile.choices = [x for x in tile.choices if x in allowed_neighbors[tile_type]]
+            tile.choices = [x for x in tile.choices if x in Tile.allowed_neighbors[tile_type]]
             scores[j1][i1] = tile.score
     return tiles, scores
 
@@ -128,7 +133,7 @@ def choose_tile(scores, minimum):
 @timer
 def find_and_update_most_constrained_tile(tiles, scores):
     minimum = np.min(scores)
-    if minimum == MAX_SCORE:
+    if minimum == Tile.max_score:
         return None, None, None
     
     # chosse a random tile from the tiles with the least possibilities    
