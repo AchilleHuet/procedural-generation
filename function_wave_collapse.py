@@ -70,6 +70,8 @@ class Tile:
     max_score = len(types)+1
 
     def __init__(self, i, j):
+        self.i: int = i
+        self.j: int = j
         self.x: int = TILE_SIZE[0]*i
         self.y: int = TILE_SIZE[1]*j
         self.choices: list[str] =  Tile.types
@@ -81,18 +83,17 @@ class Tile:
     def score(self):
         return Tile.max_score if self.type is not None else len(self.choices)
     
-    def choose_type(self):
-        [self.type] = choices(self.choices, weights=[Tile.type_weights[c] for c in self.choices])
+    def set_type(self, type):
+        self.type = type
         self.color = Tile.type_to_color[self.type]
-        # self.choices.remove(self.type)
+    
+    def choose_type(self):
+        [type] = choices(self.choices, weights=[Tile.type_weights[c] for c in self.choices])
+        self.set_type(type)
         return self.type
     
     def draw(self):
         pygame.draw.rect(screen, self.color, self.rect)
-
-
-tiles = [[Tile(i, j) for i in range(MAP_SIZE[0])] for j in range(MAP_SIZE[1])]
-scores = np.array([[tile.score for tile in row] for row in tiles])
 
 @timer
 def get_neighbors(i, j):
@@ -134,7 +135,7 @@ def choose_tile(scores, minimum):
 def find_and_update_most_constrained_tile(tiles, scores):
     minimum = np.min(scores)
     if minimum == Tile.max_score:
-        return None, None, None
+        return tiles, None, None
     
     # chosse a random tile from the tiles with the least possibilities    
     i, j = choose_tile(scores, minimum)
@@ -161,6 +162,20 @@ def find_and_update_most_constrained_tile(tiles, scores):
 def update_screen(tile):
     if tile is not None:
         pygame.display.update(tile.rect)
+    
+
+def remove_solitary_tiles(tiles, tile_start=0):
+    flat_tiles = [tile for row in tiles for tile in row]
+    for tile_num, tile in enumerate(flat_tiles[tile_start:]):
+        neighboring_tiles = [tiles[j2][i2] for (i2,j2) in get_neighbors(tile.i, tile.j)]
+        if tile.type == neighboring_tiles[0].type:
+            continue
+        neighbor_types = set(neighbor.type for neighbor in neighboring_tiles)
+        if len(neighbor_types) == 1:
+            tile.set_type(list(neighbor_types)[0])
+            tile.draw()
+            return tiles, tile, tile_num+tile_start
+    return None, None, None
 
 
 if __name__ == "__main__":
@@ -174,14 +189,27 @@ if __name__ == "__main__":
     # Main Loop
     clock = pygame.time.Clock()
     RUN = True
+    UPDATE = False
+
+    # Set up simulation
+    tiles = [[Tile(i, j) for i in range(MAP_SIZE[0])] for j in range(MAP_SIZE[1])]
+    scores = np.array([[tile.score for tile in row] for row in tiles])
+    tile_start = 0
 
     while RUN:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 RUN = False
-
-        if tiles is not None:
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN:
+                    UPDATE = True
+        
+        if scores is not None:
             tiles, scores, updated_tile = find_and_update_most_constrained_tile(tiles, scores)
+            update_screen(updated_tile)
+
+        if UPDATE and tiles is not None:
+            tiles, updated_tile, tile_start = remove_solitary_tiles(tiles, tile_start)
             update_screen(updated_tile)
 
     print(TIMER)
